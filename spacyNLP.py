@@ -22,8 +22,33 @@ COMPOUNDS = ["compound"]
 PREPOSITIONS = ["prep"]
 NEGATIONS = ["no", "not", "n't", "never", "none","neg"]
 import spacy
+import tensorflow as tf
+import tensorflow.keras as keras
 #from spacy import displacy
+imdb = keras.datasets.imdb
+word_index = imdb.get_word_index()
 
+# The first indices are reserved
+word_index = {k:(v+3) for k,v in word_index.items()} 
+word_index["<PAD>"] = 0
+word_index["<START>"] = 1
+word_index["<UNK>"] = 2  # unknown
+word_index["<UNUSED>"] = 3
+def encode_review(string):
+    w, h = 256, 1;
+    Matrix = [[0 for x in range(w)] for y in range(h)] 
+    Matrix[0][0] = 1
+    i = 1
+    for x in string.split(' '):
+       if(word_index.get(x)!=None):
+           Matrix[0][i]=word_index[x]
+       else:
+           Matrix[0][i]= (2)
+       i+=1
+    Matrix[0] = keras.preprocessing.sequence.pad_sequences([Matrix[0]],value = word_index["<PAD>"],padding='post',maxlen=256)
+    m = Matrix[0];
+    #rez = [[m[j][i] for j in range(len(m))] for i in range(1)]     
+    return(m)
 
 def Get_RootTokens(doc):
     a = [token for token in doc if(str(token.dep_)=="ROOT")]
@@ -37,12 +62,11 @@ def Get_SubjOfRoot(doc,root):
 def Get_NegOfSubj(doc,subj,root):
     a = []
     for token in doc:
-        if(root.is_ancestor(token) and (str(token.dep_) in NEGATIONS) and (root.is_ancestor(subj) and root.is_ancestor(subj))):
+        if(root.is_ancestor(token) and (str(token.dep_) in NEGATIONS) and root.is_ancestor(subj)):
             a.append(token)
     return a
 def GetHeads(doc,token):
     a=[]
-    
     while(True):
         a.append(token)
         if(token.dep_=="ROOT" or token.dep_=="VERB" or token.dep_=="NOUN"):
@@ -58,22 +82,24 @@ def Get_NegOfAttr(doc,attrs,subj,root):
             b=[]
             for neg in negw:
                 #if(neg.head==token.head.head or neg.head == token.head):
-                if(neg.head in GetHeads(doc,token.head)):
-                    b.append(neg)
-            a.append(b)
+                if(neg.head in GetHeads(doc,token.head) and not b.__contains__(neg)):
+                    b.append(neg)        
+            if(not a.__contains__(b)):    
+                a.append(b)
     return a
 
 
 nlp = spacy.load('en_core_web_sm')
-
+model = keras.models.load_model('Model.bin');
 while(True):
     print('--------------------------')
     print('--------------------------')
     doc2 = nlp(input('Enter String: '))
     
-    for token in doc2:
+    """for token in doc2:
         for token2 in doc2:
           print(token.text,token2.text,token.dep_,token.is_ancestor(token2),token2.dep_,token2.is_ancestor(token))
+    """
     print('--------------------------')
     print('--------------------------')
     if(doc2.text=='break'):
@@ -84,9 +110,10 @@ while(True):
         print(root,'-')
         for subj in subjs:
              attrsR = [k for k in Get_AttrOfRoot(doc2,subj.head)]
-             attrsS = [k for k in Get_AttrOfRoot(doc2,subj)]
+             attrsS = [ float(model.predict(encode_review(k.string))) for k in Get_AttrOfRoot(doc2,subj.head)]
              NegW = [k for k in Get_NegOfAttr(doc2,attrsR,subj,root)]
              print(subj,':',attrsR,';',attrsS,';;',NegW)
+             
    # displacy.serve(doc2, style='doc')
 
 """DONE
