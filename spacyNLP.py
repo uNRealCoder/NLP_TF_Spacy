@@ -35,7 +35,7 @@ word_index["<START>"] = 1
 word_index["<UNK>"] = 2  # unknown
 word_index["<UNUSED>"] = 3
 def encode_review(string):
-    w, h = 256, 1;
+    w, h = 256, 1
     Matrix = [[0 for x in range(w)] for y in range(h)] 
     Matrix[0][0] = 1
     i = 1
@@ -46,7 +46,7 @@ def encode_review(string):
            Matrix[0][i]= (2)
        i+=1
     Matrix[0] = keras.preprocessing.sequence.pad_sequences([Matrix[0]],value = word_index["<PAD>"],padding='post',maxlen=256)
-    m = Matrix[0];
+    m = Matrix[0]
     #rez = [[m[j][i] for j in range(len(m))] for i in range(1)]     
     return(m)
 
@@ -54,7 +54,7 @@ def Get_RootTokens(doc):
     a = [token for token in doc if(str(token.dep_)=="ROOT")]
     return a
 def Get_AttrOfRoot(doc,root):
-     a = [token for token in doc if(root.is_ancestor(token) and (str(token.dep_) in ADJECTIVES))]
+     a = [token for token in doc if(root == (token.head) and (str(token.dep_) in ADJECTIVES))]
      return a
 def Get_SubjOfRoot(doc,root):
     a = [token for token in doc if(root.is_ancestor(token) and((str(token.dep_) in SUBJECTS) or (str(token.dep_) in OBJECTS)))]
@@ -62,7 +62,7 @@ def Get_SubjOfRoot(doc,root):
 def Get_NegOfSubj(doc,subj,root):
     a = []
     for token in doc:
-        if(root.is_ancestor(token) and (str(token.dep_) in NEGATIONS) and root.is_ancestor(subj)):
+        if(root.is_ancestor(token) and (str(token.dep_) in NEGATIONS) and root.is_ancestor(subj) and (subj.head==token.head)):
             a.append(token)
     return a
 def GetHeads(doc,token):
@@ -96,10 +96,10 @@ while(True):
     print('--------------------------')
     doc2 = nlp(input('Enter String: '))
     
-    """for token in doc2:
-        for token2 in doc2:
-          print(token.text,token2.text,token.dep_,token.is_ancestor(token2),token2.dep_,token2.is_ancestor(token))
-    """
+    #"""for token in doc2:
+     #   for token2 in doc2:
+      #    print(token.text,token2.text,token.dep_,token.is_ancestor(token2),token2.dep_,token2.is_ancestor(token))
+    #"""
     print('--------------------------')
     print('--------------------------')
     if(doc2.text=='break'):
@@ -113,18 +113,19 @@ while(True):
              attrsS = [ float(model.predict(encode_review(k.string))) for k in Get_AttrOfRoot(doc2,subj.head)]
              NegW = [k for k in Get_NegOfAttr(doc2,attrsR,subj,root)]
              print(subj,':',attrsR,';',attrsS,';;',NegW)
-             
-   # displacy.serve(doc2, style='doc')
+                
+    # displacy.serve(doc2, style='doc')
 
 """DONE
 1. Subject extractions
-2.  Finding attributes and complementing words like 'not'
+2. Finding attributes and complementing words like 'not'
 3. Model to evaluate words
+4. Import model to evaluate final number- call model.load() and use compute function
+5. Find the negative words association to attributes.
 ---
 TO DO
 ---
-1. Find the negative words association to attributes.
-2. What do to with 'very', 'little' etc.
-3.  Import model to evaluate final number- call model.load() and use compute function
-4.  
+1. What do to with 'very', 'little' etc.
+2. Parse data as JSON/XML to C# for further analysis.  
+3. Adding multiple numbers/adjectives??
 """
